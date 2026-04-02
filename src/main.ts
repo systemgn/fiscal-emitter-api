@@ -3,6 +3,7 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
+import { setupBullBoard } from './infrastructure/bull-board/bull-board.setup';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -11,9 +12,11 @@ async function bootstrap() {
   });
 
   const prefix = process.env.API_PREFIX ?? 'v1';
-  app.setGlobalPrefix(prefix);
+  app.setGlobalPrefix(prefix, {
+    // Admin queues board fica fora do prefixo v1
+    exclude: ['admin/queues(.*)'],
+  });
 
-  // Validação automática de DTOs
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist:            true,
@@ -23,19 +26,25 @@ async function bootstrap() {
     }),
   );
 
-  // Padrão de resposta uniforme
   app.useGlobalInterceptors(new ResponseInterceptor());
-
-  // Handler global de erros
   app.useGlobalFilters(new AllExceptionsFilter());
-
   app.enableShutdownHooks();
+
+  // Bull Board — painel de filas (apenas em desenvolvimento ou com BULL_BOARD_ENABLED=true)
+  if (
+    process.env.NODE_ENV !== 'production' ||
+    process.env.BULL_BOARD_ENABLED === 'true'
+  ) {
+    setupBullBoard(app);
+  }
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
 
-  logger.log(`Fiscal Emitter API listening on port ${port}`);
-  logger.log(`Health: http://localhost:${port}/${prefix}/health`);
+  logger.log(`Fiscal Emitter API v2 listening on port ${port}`);
+  logger.log(`Health:     http://localhost:${port}/${prefix}/health`);
+  logger.log(`Bull Board: http://localhost:${port}/admin/queues`);
+  logger.log(`Admin API:  http://localhost:${port}/${prefix}/admin/tenants`);
 }
 
 bootstrap().catch((err) => {
