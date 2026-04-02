@@ -10,6 +10,7 @@ import {
   FiscalProvider,
 } from '../../modules/providers/fiscal-provider.interface';
 import { CancelJobData, QUEUE_CANCEL } from '../../infrastructure/queue/queue.config';
+import { WebhooksService } from '../../modules/webhooks/webhooks.service';
 
 @Processor(QUEUE_CANCEL, { concurrency: 3 })
 export class CancellationProcessor extends WorkerHost {
@@ -24,6 +25,8 @@ export class CancellationProcessor extends WorkerHost {
 
     @Inject(FISCAL_PROVIDER)
     private readonly fiscalProvider: FiscalProvider,
+
+    private readonly webhooksService: WebhooksService,
   ) {
     super();
   }
@@ -34,7 +37,7 @@ export class CancellationProcessor extends WorkerHost {
 
     const doc = await this.docRepo.findOne({ where: { id: documentId } });
     if (!doc || !doc.nfseNumber) {
-      this.logger.warn(`Cannot cancel doc=${documentId}: not found or no nfseNumber`);
+      this.logger.warn(`Cannot cancel doc=${documentId}: not found or missing nfseNumber`);
       return;
     }
 
@@ -58,6 +61,14 @@ export class CancellationProcessor extends WorkerHost {
           cancelledAt: result.cancelledAt,
         });
         this.logger.log(`Document ${documentId} cancelled`);
+
+        // Dispara webhook document.cancelled
+        const cancelledDoc = await this.docRepo.findOne({ where: { id: documentId } });
+        if (cancelledDoc) {
+          this.webhooksService
+            .dispatch('document.cancelled', cancelledDoc)
+            .catch((e) => this.logger.warn(`Webhook dispatch failed: ${e.message}`));
+        }
       } else {
         await this.docRepo.update(documentId, {
           status:       'error',

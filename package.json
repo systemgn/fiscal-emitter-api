@@ -1,6 +1,6 @@
 {
   "name": "fiscal-emitter-api",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "NFS-e Nacional Emitter API — Multi-tenant SaaS",
   "author": "Fiscal Emitter",
   "private": true,
@@ -28,6 +28,8 @@
     "@nestjs/bullmq": "^10.1.1",
     "@nestjs/terminus": "^10.2.3",
     "@nestjs/throttler": "^5.1.2",
+    "@nestjs/jwt": "^10.2.0",
+    "@nestjs/swagger": "^7.3.0",
     "@bull-board/api": "^5.19.0",
     "@bull-board/express": "^5.19.0",
     "@bull-board/nestjs": "^5.19.0",
@@ -42,8 +44,11 @@
     "bcrypt": "^5.1.1",
     "uuid": "^9.0.1",
     "axios": "^1.6.8",
-    "https": "^1.0.0",
-    "node-forge": "^1.3.1"
+    "node-forge": "^1.3.1",
+    "nestjs-pino": "^4.1.0",
+    "pino-http": "^10.2.0",
+    "pino-pretty": "^11.2.1",
+    "prom-client": "^15.1.2"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.3.2",

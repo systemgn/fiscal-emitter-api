@@ -16,6 +16,7 @@ import {
   StatusPayload,
   StatusResult,
 } from '../fiscal-provider.interface';
+import { classifyNfseError, shouldRetry } from './nfse-error-codes';
 
 // Entidade inline de credenciais por tenant
 import { Column, Entity, PrimaryColumn } from 'typeorm';
@@ -333,25 +334,43 @@ export class NfseNacionalProvider implements FiscalProvider {
     const body       = err.response?.data;
 
     if (httpStatus && httpStatus < 500) {
-      // 4xx = erro de negócio (não retentar)
       const code    = body?.codigo ?? body?.code ?? 'NFSE_ERROR';
       const message = body?.mensagem ?? body?.message ?? err.message;
-      this.logger.warn(`[${op}] Business error ${httpStatus}: ${message}`);
-      return { success: false, errorCode: code, errorMessage: message, rawResponse: body };
+      const def     = classifyNfseError(code);
+
+      this.logger.warn(`[${op}] SEFAZ error ${code} (${def.category}): ${message}`);
+
+      if (!shouldRetry(code)) {
+        // Erro de negócio — não retentar, retorna failure
+        return {
+          success:      false,
+          errorCode:    code,
+          errorMessage: def.userMessage || message,
+          rawResponse:  this.sanitizeResponse(body),
+        };
+      }
     }
 
-    // 5xx ou sem resposta = erro técnico (relançar para retry)
+    // Erro técnico (5xx, timeout, rede) → relança para BullMQ retentar
     this.logger.error(`[${op}] Technical error: ${err.message}`);
     throw err;
   }
 
   private handleCancelError(err: any): CancelResult {
     const body = err.response?.data;
-    return {
-      success: false,
-      errorCode:    body?.codigo   ?? 'CANCEL_ERROR',
-      errorMessage: body?.mensagem ?? err.message,
-      rawResponse: body,
-    };
+    const code = body?.codigo ?? body?.code ?? 'CANCEL_ERROR';
+    const def  = classifyNfseError(code);
+
+    if (!shouldRetry(code)) {
+      return {
+        success:      false,
+        errorCode:    code,
+        errorMessage: def.userMessage || body?.mensagem || err.message,
+        rawResponse:  this.sanitizeResponse(body),
+      };
+    }
+
+    // Erro técnico → relança para retry
+    throw err;
   }
 }

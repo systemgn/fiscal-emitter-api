@@ -260,6 +260,40 @@ export class FiscalDocumentsService {
   }
 
   // ──────────────────────────────────────────────────────────────
+  // RETRY MANUAL
+  // ──────────────────────────────────────────────────────────────
+  async retry(tenant: Tenant, documentId: string): Promise<FiscalDocument> {
+    const doc = await this.findById(tenant.id, documentId);
+
+    if (!['error', 'rejected'].includes(doc.status)) {
+      throw new BadRequestException(
+        `Cannot retry document with status '${doc.status}'. Only 'error' or 'rejected' documents can be retried.`,
+      );
+    }
+
+    await this.docRepo.update(documentId, {
+      status:       'pending',
+      errorCode:    null,
+      errorMessage: null,
+      retryCount:   doc.retryCount + 1,
+    });
+
+    await this.logEvent(documentId, tenant.id, 'retry', doc.status, 'pending', {
+      previousStatus: doc.status,
+      manualRetry:    true,
+    });
+
+    await this.producer.enqueueEmission({
+      documentId,
+      tenantId:    tenant.id,
+      environment: doc.environment,
+    });
+
+    this.logger.log(`Manual retry for document ${documentId} (was: ${doc.status})`);
+    return this.findById(tenant.id, documentId);
+  }
+
+  // ──────────────────────────────────────────────────────────────
   // HELPERS
   // ──────────────────────────────────────────────────────────────
   private buildIdempotencyKey(

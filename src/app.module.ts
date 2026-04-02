@@ -3,12 +3,14 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bullmq';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { LoggerModule } from 'nestjs-pino';
 import { APP_GUARD } from '@nestjs/core';
 import { appConfig, dbConfig, queueConfig, redisConfig } from './config/app.config';
 import { FiscalDocument } from './modules/fiscal-documents/entities/fiscal-document.entity';
 import { FiscalDocumentEvent } from './modules/fiscal-documents/entities/fiscal-document-event.entity';
 import { Tenant } from './modules/tenants/entities/tenant.entity';
 import { ApiClient } from './modules/tenants/entities/api-client.entity';
+import { TenantCredential } from './modules/tenants/entities/tenant-credential.entity';
 import { WebhookSubscription } from './modules/webhooks/entities/webhook-subscription.entity';
 import { WebhookDelivery } from './modules/webhooks/entities/webhook-delivery.entity';
 import { AuthModule } from './modules/auth/auth.module';
@@ -18,21 +20,27 @@ import { HealthModule } from './modules/health/health.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { TenantsModule } from './modules/tenants/tenants.module';
 import { ExportsModule } from './modules/exports/exports.module';
+import { AdminAuthModule } from './modules/admin-auth/admin-auth.module';
+import { MetricsModule } from './infrastructure/metrics/metrics.module';
 import { TenantThrottleGuard } from './common/guards/tenant-throttle.guard';
+import { pinoConfig } from './infrastructure/logger/pino.config';
 
 @Module({
   imports: [
+    // Config global
     ConfigModule.forRoot({
       isGlobal: true,
       load: [appConfig, dbConfig, redisConfig, queueConfig],
       envFilePath: '.env',
     }),
 
-    // Rate limiting: 120 req/min por tenant (janela de 60s)
-    ThrottlerModule.forRoot([
-      { name: 'default', ttl: 60_000, limit: 120 },
-    ]),
+    // Logger estruturado Pino
+    LoggerModule.forRoot(pinoConfig()),
 
+    // Rate limiting: 120 req/min por tenant
+    ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 120 }]),
+
+    // TypeORM — MySQL
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => ({
@@ -44,16 +52,17 @@ import { TenantThrottleGuard } from './common/guards/tenant-throttle.guard';
         database: cfg.get('db.name'),
         entities: [
           FiscalDocument, FiscalDocumentEvent,
-          Tenant, ApiClient,
+          Tenant, ApiClient, TenantCredential,
           WebhookSubscription, WebhookDelivery,
         ],
         synchronize: false,
-        charset:  'utf8mb4',
-        timezone: 'Z',
-        extra: { connectionLimit: 10 },
+        charset:     'utf8mb4',
+        timezone:    'Z',
+        extra:       { connectionLimit: 10 },
       }),
     }),
 
+    // BullMQ — Redis
     BullModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => ({
@@ -72,15 +81,16 @@ import { TenantThrottleGuard } from './common/guards/tenant-throttle.guard';
     }),
 
     AuthModule,
+    AdminAuthModule,
     ProvidersModule,
     FiscalDocumentsModule,
     WebhooksModule,
     TenantsModule,
     ExportsModule,
     HealthModule,
+    MetricsModule,
   ],
   providers: [
-    // Rate limit aplicado globalmente em todas as rotas
     { provide: APP_GUARD, useClass: TenantThrottleGuard },
   ],
 })

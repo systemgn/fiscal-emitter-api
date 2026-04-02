@@ -10,7 +10,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { AdminGuard } from '../../common/guards/admin.guard';
+import { JwtAdminGuard } from '../admin-auth/jwt-admin.guard';
 import { TenantsService } from './tenants.service';
 import { CreateApiClientDto, CreateTenantDto } from './dtos/create-tenant.dto';
 
@@ -27,7 +27,7 @@ import { CreateApiClientDto, CreateTenantDto } from './dtos/create-tenant.dto';
  *   GET    /v1/admin/tenants/:id/api-clients
  *   DELETE /v1/admin/tenants/:id/api-clients/:clientId
  */
-@UseGuards(AdminGuard)
+@UseGuards(JwtAdminGuard)
 @Controller('admin/tenants')
 export class TenantsController {
   constructor(private readonly svc: TenantsService) {}

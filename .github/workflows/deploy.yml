@@ -1,0 +1,38 @@
+name: Deploy to Railway
+
+on:
+  push:
+    branches: [master, main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    needs: []        # roda direto — Railway faz o próprio build via Dockerfile
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy API to Railway
+        uses: bervProject/railway-deploy@main
+        with:
+          railway_token: ${{ secrets.RAILWAY_TOKEN }}
+          service: fiscal-emitter-api
+
+      - name: Deploy Worker to Railway
+        uses: bervProject/railway-deploy@main
+        with:
+          railway_token: ${{ secrets.RAILWAY_TOKEN }}
+          service: fiscal-emitter-worker
+
+      - name: Notify deploy
+        if: always()
+        run: |
+          STATUS="${{ job.status }}"
+          SHA="${{ github.sha }}"
+          echo "Deploy ${STATUS} — commit ${SHA:0:7}"

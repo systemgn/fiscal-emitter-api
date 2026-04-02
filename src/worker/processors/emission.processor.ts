@@ -10,6 +10,7 @@ import {
   FiscalProvider,
 } from '../../modules/providers/fiscal-provider.interface';
 import { EmitJobData, QUEUE_EMIT } from '../../infrastructure/queue/queue.config';
+import { WebhooksService } from '../../modules/webhooks/webhooks.service';
 
 @Processor(QUEUE_EMIT, { concurrency: 5 })
 export class EmissionProcessor extends WorkerHost {
@@ -24,6 +25,8 @@ export class EmissionProcessor extends WorkerHost {
 
     @Inject(FISCAL_PROVIDER)
     private readonly fiscalProvider: FiscalProvider,
+
+    private readonly webhooksService: WebhooksService,
   ) {
     super();
   }
@@ -38,21 +41,20 @@ export class EmissionProcessor extends WorkerHost {
       return;
     }
 
-    // Marca como processing
     await this.docRepo.update(documentId, { status: 'processing', retryCount: job.attemptsMade });
     await this.saveEvent(documentId, tenantId, 'processing', 'pending', 'processing');
 
     try {
       const result = await this.fiscalProvider.emit({
         tenantId,
-        environment:      doc.environment,
-        providerCnpj:     doc.providerCnpj,
+        environment:       doc.environment,
+        providerCnpj:      doc.providerCnpj,
         externalReference: doc.externalReference,
         taker: {
           documentType: doc.takerDocumentType,
           document:     doc.takerDocument,
           name:         doc.takerName,
-          email:        doc.takerEmail ?? undefined,
+          email:        doc.takerEmail    ?? undefined,
           address: {
             street:     doc.takerStreet     ?? undefined,
             number:     doc.takerNumber     ?? undefined,
@@ -87,23 +89,31 @@ export class EmissionProcessor extends WorkerHost {
 
       if (result.success) {
         await this.docRepo.update(documentId, {
-          status:       'issued',
-          nfseNumber:   result.nfseNumber   ?? null,
-          nfseCode:     result.nfseCode     ?? null,
-          nfseIssuedAt: result.nfseIssuedAt ?? null,
-          nfseRpsNumber: result.rpsNumber   ?? doc.nfseRpsNumber,
-          nfseRpsSeries: result.rpsSeries   ?? doc.nfseRpsSeries,
-          rawResponse:  result.rawResponse  ?? null,
-          errorCode:    null,
-          errorMessage: null,
+          status:        'issued',
+          nfseNumber:    result.nfseNumber   ?? null,
+          nfseCode:      result.nfseCode     ?? null,
+          nfseIssuedAt:  result.nfseIssuedAt ?? null,
+          nfseRpsNumber: result.rpsNumber    ?? doc.nfseRpsNumber,
+          nfseRpsSeries: result.rpsSeries    ?? doc.nfseRpsSeries,
+          rawResponse:   result.rawResponse  ?? null,
+          errorCode:     null,
+          errorMessage:  null,
         });
         await this.saveEvent(documentId, tenantId, 'issued', 'processing', 'issued', {
           nfseNumber: result.nfseNumber,
           nfseCode:   result.nfseCode,
         });
         this.logger.log(`Document ${documentId} issued → NFS-e #${result.nfseNumber}`);
+
+        // Dispara webhook document.issued (não bloqueante)
+        const updatedDoc = await this.docRepo.findOne({ where: { id: documentId } });
+        if (updatedDoc) {
+          this.webhooksService
+            .dispatch('document.issued', updatedDoc)
+            .catch((e) => this.logger.warn(`Webhook dispatch failed: ${e.message}`));
+        }
       } else {
-        // Erro de negócio (SEFAZ rejeitou) — não retentar
+        // Erro de negócio — não retentar
         await this.docRepo.update(documentId, {
           status:       'rejected',
           errorCode:    result.errorCode    ?? 'PROVIDER_ERROR',
@@ -111,11 +121,18 @@ export class EmissionProcessor extends WorkerHost {
           rawResponse:  result.rawResponse  ?? null,
         });
         await this.saveEvent(documentId, tenantId, 'error', 'processing', 'rejected', {
-          errorCode: result.errorCode,
+          errorCode:    result.errorCode,
           errorMessage: result.errorMessage,
         });
-        this.logger.warn(`Document ${documentId} rejected by SEFAZ: ${result.errorMessage}`);
-        // Não lança exception — evita retry de erros de negócio
+        this.logger.warn(`Document ${documentId} rejected: ${result.errorMessage}`);
+
+        // Dispara webhook document.rejected
+        const rejectedDoc = await this.docRepo.findOne({ where: { id: documentId } });
+        if (rejectedDoc) {
+          this.webhooksService
+            .dispatch('document.rejected', rejectedDoc)
+            .catch((e) => this.logger.warn(`Webhook dispatch failed: ${e.message}`));
+        }
       }
     } catch (err: any) {
       this.logger.error(`Emission failed for doc=${documentId}: ${err.message}`, err.stack);
@@ -127,12 +144,21 @@ export class EmissionProcessor extends WorkerHost {
         retryCount:   job.attemptsMade,
       });
       await this.saveEvent(documentId, tenantId, 'error', 'processing', 'error', {
-        error: err.message,
+        error:   err.message,
         attempt: job.attemptsMade,
       });
 
-      // Relança para o BullMQ gerenciar retry com backoff
-      throw err;
+      // Dispara webhook document.error somente na última tentativa
+      if (job.attemptsMade >= (job.opts.attempts ?? 3) - 1) {
+        const errDoc = await this.docRepo.findOne({ where: { id: documentId } });
+        if (errDoc) {
+          this.webhooksService
+            .dispatch('document.error', errDoc)
+            .catch((e) => this.logger.warn(`Webhook dispatch failed: ${e.message}`));
+        }
+      }
+
+      throw err; // BullMQ faz retry com backoff
     }
   }
 

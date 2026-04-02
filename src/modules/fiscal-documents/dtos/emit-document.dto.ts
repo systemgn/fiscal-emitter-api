@@ -12,169 +12,122 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class TakerAddressDto {
-  @IsOptional()
-  @IsString()
-  street?: string;
+  @ApiPropertyOptional({ example: 'Rua das Flores' })
+  @IsOptional() @IsString() street?: string;
 
-  @IsOptional()
-  @IsString()
-  number?: string;
+  @ApiPropertyOptional({ example: '123' })
+  @IsOptional() @IsString() number?: string;
 
-  @IsOptional()
-  @IsString()
-  complement?: string;
+  @ApiPropertyOptional({ example: 'Sala 4' })
+  @IsOptional() @IsString() complement?: string;
 
-  @IsOptional()
-  @IsString()
-  district?: string;
+  @ApiPropertyOptional({ example: 'Centro' })
+  @IsOptional() @IsString() district?: string;
 
-  @IsOptional()
-  @IsString()
-  @Length(7, 7, { message: 'cityCode must be 7 digits (IBGE)' })
-  cityCode?: string;
+  @ApiPropertyOptional({ example: '3550308', description: 'Código IBGE 7 dígitos' })
+  @IsOptional() @IsString() @Length(7, 7) cityCode?: string;
 
-  @IsOptional()
-  @IsString()
-  cityName?: string;
+  @ApiPropertyOptional({ example: 'São Paulo' })
+  @IsOptional() @IsString() cityName?: string;
 
-  @IsOptional()
-  @IsString()
-  @Length(2, 2)
-  state?: string;
+  @ApiPropertyOptional({ example: 'SP' })
+  @IsOptional() @IsString() @Length(2, 2) state?: string;
 
-  @IsOptional()
-  @IsString()
-  @Matches(/^\d{8}$/, { message: 'zipCode must be 8 digits' })
-  zipCode?: string;
+  @ApiPropertyOptional({ example: '01001000', description: '8 dígitos sem traço' })
+  @IsOptional() @IsString() @Matches(/^\d{8}$/) zipCode?: string;
 }
 
 export class TakerDto {
-  @IsEnum(['cpf', 'cnpj'])
-  documentType: 'cpf' | 'cnpj';
+  @ApiProperty({ enum: ['cpf', 'cnpj'] })
+  @IsEnum(['cpf', 'cnpj']) documentType: 'cpf' | 'cnpj';
 
-  @IsString()
-  @IsNotEmpty()
-  @Matches(/^\d{11,14}$/, { message: 'document must be 11 (CPF) or 14 (CNPJ) digits' })
-  document: string;
+  @ApiProperty({ example: '12345678901', description: '11 dígitos (CPF) ou 14 (CNPJ), sem máscara' })
+  @IsString() @IsNotEmpty()
+  @Matches(/^\d{11,14}$/) document: string;
 
-  @IsString()
-  @IsNotEmpty()
-  name: string;
+  @ApiProperty({ example: 'João da Silva' })
+  @IsString() @IsNotEmpty() name: string;
 
-  @IsOptional()
-  @IsEmail()
-  email?: string;
+  @ApiPropertyOptional({ example: 'joao@email.com' })
+  @IsOptional() @IsEmail() email?: string;
 
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => TakerAddressDto)
-  address?: TakerAddressDto;
+  @ApiPropertyOptional({ type: TakerAddressDto })
+  @IsOptional() @ValidateNested() @Type(() => TakerAddressDto) address?: TakerAddressDto;
 }
 
 export class TaxesDto {
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  issRate?: number;   // alíquota ISS (ex: 0.05 = 5%)
+  @ApiPropertyOptional({ example: 0.05, description: 'Alíquota ISS (0.05 = 5%)' })
+  @IsOptional() @IsNumber() @Min(0) issRate?: number;
 
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  deductions?: number;
+  @ApiPropertyOptional({ example: 0 })
+  @IsOptional() @IsNumber() @Min(0) deductions?: number;
 
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  pisAmount?: number;
+  @ApiPropertyOptional({ example: 9.75 })
+  @IsOptional() @IsNumber() @Min(0) pisAmount?: number;
 
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  cofinsAmount?: number;
+  @ApiPropertyOptional({ example: 45.00 })
+  @IsOptional() @IsNumber() @Min(0) cofinsAmount?: number;
 
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  irAmount?: number;
+  @ApiPropertyOptional({ example: 0 })
+  @IsOptional() @IsNumber() @Min(0) irAmount?: number;
 
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  csllAmount?: number;
+  @ApiPropertyOptional({ example: 0 })
+  @IsOptional() @IsNumber() @Min(0) csllAmount?: number;
 
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  inssAmount?: number;
+  @ApiPropertyOptional({ example: 0 })
+  @IsOptional() @IsNumber() @Min(0) inssAmount?: number;
 }
 
 export class ServiceDto {
-  @IsString()
-  @IsNotEmpty()
-  code: string;   // código LC 116/2003
+  @ApiProperty({ example: '17.06', description: 'Código LC 116/2003' })
+  @IsString() @IsNotEmpty() code: string;
 
-  @IsString()
-  @IsNotEmpty()
-  description: string;
+  @ApiProperty({ example: 'Consultoria em tecnologia da informação' })
+  @IsString() @IsNotEmpty() description: string;
 
-  @IsNumber()
-  @IsPositive()
-  amount: number;
+  @ApiProperty({ example: 1500.00, description: 'Valor bruto do serviço' })
+  @IsNumber() @IsPositive() amount: number;
 
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => TaxesDto)
-  taxes?: TaxesDto;
+  @ApiPropertyOptional({ type: TaxesDto })
+  @IsOptional() @ValidateNested() @Type(() => TaxesDto) taxes?: TaxesDto;
 }
 
 export class RpsDto {
-  @IsOptional()
-  @IsString()
-  number?: string;
+  @ApiPropertyOptional({ example: '1001' })
+  @IsOptional() @IsString() number?: string;
 
-  @IsOptional()
-  @IsString()
-  series?: string;
+  @ApiPropertyOptional({ example: 'A' })
+  @IsOptional() @IsString() series?: string;
 
-  @IsOptional()
-  @IsString()
-  type?: string;
+  @ApiPropertyOptional({ example: 'RPS', default: 'RPS' })
+  @IsOptional() @IsString() type?: string;
 }
 
 export class EmitDocumentDto {
-  /**
-   * Identificador único do documento no sistema do cliente.
-   * Usado como chave de idempotência (junto ao tenantId e payload hash).
-   */
-  @IsString()
-  @IsNotEmpty()
-  externalReference: string;
+  @ApiProperty({
+    example: 'PEDIDO-2024-001',
+    description: 'Identificador único no sistema do cliente. Chave de idempotência.',
+  })
+  @IsString() @IsNotEmpty() externalReference: string;
 
-  @IsEnum(['sandbox', 'production'])
-  environment: 'sandbox' | 'production' = 'sandbox';
+  @ApiProperty({ enum: ['sandbox', 'production'], default: 'sandbox' })
+  @IsEnum(['sandbox', 'production']) environment: 'sandbox' | 'production' = 'sandbox';
 
-  /** CNPJ do prestador de serviços */
-  @IsString()
-  @IsNotEmpty()
-  @Matches(/^\d{14}$/, { message: 'providerCnpj must be 14 digits' })
-  providerCnpj: string;
+  @ApiProperty({ example: '12345678000195', description: 'CNPJ do prestador (14 dígitos)' })
+  @IsString() @IsNotEmpty() @Matches(/^\d{14}$/) providerCnpj: string;
 
-  @IsString()
-  @IsNotEmpty()
-  providerName: string;
+  @ApiProperty({ example: 'Empresa Demo Ltda' })
+  @IsString() @IsNotEmpty() providerName: string;
 
-  @ValidateNested()
-  @Type(() => TakerDto)
-  taker: TakerDto;
+  @ApiProperty({ type: TakerDto })
+  @ValidateNested() @Type(() => TakerDto) taker: TakerDto;
 
-  @ValidateNested()
-  @Type(() => ServiceDto)
-  service: ServiceDto;
+  @ApiProperty({ type: ServiceDto })
+  @ValidateNested() @Type(() => ServiceDto) service: ServiceDto;
 
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => RpsDto)
-  rps?: RpsDto;
+  @ApiPropertyOptional({ type: RpsDto })
+  @IsOptional() @ValidateNested() @Type(() => RpsDto) rps?: RpsDto;
 }
