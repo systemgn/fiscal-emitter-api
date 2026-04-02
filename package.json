@@ -1,0 +1,48 @@
+{
+  "name": "fiscal-emitter-api",
+  "version": "1.0.0",
+  "description": "NFS-e Nacional Emitter API — Multi-tenant SaaS",
+  "author": "Fiscal Emitter",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "build": "nest build",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "start": "node dist/main",
+    "start:dev": "nest start --watch",
+    "start:worker": "nest start --watch --entryFile worker/worker-entry",
+    "start:worker:prod": "node dist/worker/worker-entry",
+    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "test": "jest",
+    "db:schema": "mysql -h $DB_HOST -P $DB_PORT -u $DB_USER -p$DB_PASSWORD < database/schema.sql"
+  },
+  "dependencies": {
+    "@nestjs/common": "^10.3.0",
+    "@nestjs/core": "^10.3.0",
+    "@nestjs/platform-express": "^10.3.0",
+    "@nestjs/config": "^3.2.0",
+    "@nestjs/typeorm": "^10.0.2",
+    "@nestjs/bullmq": "^10.1.1",
+    "@nestjs/terminus": "^10.2.3",
+    "typeorm": "^0.3.20",
+    "mysql2": "^3.9.2",
+    "bullmq": "^5.4.2",
+    "ioredis": "^5.3.2",
+    "class-validator": "^0.14.1",
+    "class-transformer": "^0.5.1",
+    "reflect-metadata": "^0.2.1",
+    "rxjs": "^7.8.1",
+    "bcrypt": "^5.1.1",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^10.3.2",
+    "@nestjs/schematics": "^10.1.1",
+    "@nestjs/testing": "^10.3.0",
+    "@types/bcrypt": "^5.0.2",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.11.24",
+    "@types/uuid": "^9.0.8",
+    "typescript": "^5.3.3"
+  }
+}
