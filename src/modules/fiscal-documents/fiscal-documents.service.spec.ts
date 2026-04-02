@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { getQueueToken } from '@nestjs/bullmq';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { FiscalDocumentsService } from './fiscal-documents.service';
+import { FiscalDocumentsService, FiscalExportLog } from './fiscal-documents.service';
 import { FiscalDocument } from './entities/fiscal-document.entity';
 import { FiscalDocumentEvent } from './entities/fiscal-document-event.entity';
 import { EmissionProducer } from '../../infrastructure/queue/emission.producer';
@@ -86,7 +86,7 @@ describe('FiscalDocumentsService', () => {
         FiscalDocumentsService,
         { provide: getRepositoryToken(FiscalDocument),      useValue: mockDocRepo },
         { provide: getRepositoryToken(FiscalDocumentEvent), useValue: mockEventRepo },
-        { provide: getRepositoryToken('fiscal_exports_log'), useValue: mockExportLogRepo },
+        { provide: getRepositoryToken(FiscalExportLog), useValue: mockExportLogRepo },
         { provide: EmissionProducer, useValue: mockProducer },
         { provide: getQueueToken(QUEUE_EMIT),   useValue: mockQueue },
         { provide: getQueueToken(QUEUE_CANCEL), useValue: mockQueue },

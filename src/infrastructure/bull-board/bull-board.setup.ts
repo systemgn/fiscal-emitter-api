@@ -43,7 +43,7 @@ export function setupBullBoard(app: INestApplication): void {
             password: process.env.REDIS_PASSWORD  || undefined,
           },
         }),
-      ),
+      ) as any,
   );
 
   createBullBoard({ queues, serverAdapter });

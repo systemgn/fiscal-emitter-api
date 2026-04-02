@@ -22,7 +22,7 @@ import { Tenant } from '../tenants/entities/tenant.entity';
 import { Column, CreateDateColumn, Entity, PrimaryColumn, UpdateDateColumn } from 'typeorm';
 
 @Entity('fiscal_exports_log')
-class FiscalExportLog {
+export class FiscalExportLog {
   @PrimaryColumn({ type: 'char', length: 36 }) id: string;
   @Column({ name: 'document_id', type: 'char', length: 36 }) documentId: string;
   @Column({ name: 'tenant_id', type: 'char', length: 36 }) tenantId: string;

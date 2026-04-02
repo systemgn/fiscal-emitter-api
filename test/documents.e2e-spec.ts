@@ -6,7 +6,7 @@ import { getQueueToken } from '@nestjs/bullmq';
 import { ResponseInterceptor } from '../src/common/interceptors/response.interceptor';
 import { AllExceptionsFilter } from '../src/common/filters/http-exception.filter';
 import { FiscalDocumentsController } from '../src/modules/fiscal-documents/fiscal-documents.controller';
-import { FiscalDocumentsService } from '../src/modules/fiscal-documents/fiscal-documents.service';
+import { FiscalDocumentsService, FiscalExportLog } from '../src/modules/fiscal-documents/fiscal-documents.service';
 import { AuthService } from '../src/modules/auth/auth.service';
 import { ApiKeyGuard } from '../src/modules/auth/guards/api-key.guard';
 import { FiscalDocument } from '../src/modules/fiscal-documents/entities/fiscal-document.entity';
@@ -86,7 +86,7 @@ describe('Documents (e2e)', () => {
         AuthService,
         { provide: getRepositoryToken(FiscalDocument),      useValue: mockDocRepo },
         { provide: getRepositoryToken(FiscalDocumentEvent), useValue: mockEventRepo },
-        { provide: getRepositoryToken('fiscal_exports_log'), useValue: mockExportLogRepo },
+        { provide: getRepositoryToken(FiscalExportLog), useValue: mockExportLogRepo },
         { provide: getRepositoryToken(ApiClient), useValue: {} },
         { provide: getRepositoryToken(Tenant),    useValue: {} },
         { provide: getQueueToken(QUEUE_EMIT),   useValue: mockQueue },

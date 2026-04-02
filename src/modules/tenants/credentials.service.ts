@@ -22,7 +22,7 @@ export class CredentialsService {
     private readonly tenantsService: TenantsService,
   ) {}
 
-  async upsert(tenantId: string, dto: UpsertCredentialDto): Promise<Omit<TenantCredential, 'certificatePfx'>> {
+  async upsert(tenantId: string, dto: UpsertCredentialDto): Promise<Record<string, any>> {
     await this.tenantsService.findOne(tenantId); // garante que tenant existe
 
     let pfxBuffer: Buffer | null = null;
@@ -65,7 +65,7 @@ export class CredentialsService {
     return this.findSafe(tenantId, dto.environment);
   }
 
-  async findByTenant(tenantId: string): Promise<Omit<TenantCredential, 'certificatePfx'>[]> {
+  async findByTenant(tenantId: string): Promise<Record<string, any>[]> {
     const creds = await this.credRepo.find({ where: { tenantId } });
     return creds.map(({ certificatePfx: _, certificatePassword: __, ...safe }) => safe as any);
   }
@@ -73,15 +73,21 @@ export class CredentialsService {
   async findSafe(
     tenantId: string,
     environment: 'sandbox' | 'production',
-  ): Promise<Omit<TenantCredential, 'certificatePfx'>> {
+  ): Promise<Record<string, any>> {
     const cred = await this.credRepo.findOne({ where: { tenantId, environment } });
     if (!cred) throw new NotFoundException(`Credentials for ${environment} not found`);
-    const { certificatePfx: _, certificatePassword: __, ...safe } = cred;
     return {
-      ...safe,
-      // Informa apenas se há certificado, sem expor os bytes
-      certificatePfx: (cred.certificatePfx ? '[PRESENT]' : null) as any,
-      certificatePassword: (cred.certificatePassword ? '[MASKED]' : null) as any,
+      id:                   cred.id,
+      tenantId:             cred.tenantId,
+      environment:          cred.environment,
+      certificatePfx:       cred.certificatePfx ? '[PRESENT]' : null,
+      certificatePassword:  cred.certificatePassword ? '[MASKED]' : null,
+      certificateExpiresAt: cred.certificateExpiresAt,
+      accessToken:          cred.accessToken ? '[PRESENT]' : null,
+      tokenExpiresAt:       cred.tokenExpiresAt,
+      extraConfig:          cred.extraConfig,
+      createdAt:            cred.createdAt,
+      updatedAt:            cred.updatedAt,
     };
   }
 

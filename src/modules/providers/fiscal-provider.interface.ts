@@ -4,6 +4,7 @@ export interface EmitPayload {
   tenantId: string;
   environment: 'sandbox' | 'production';
   providerCnpj: string;
+  providerName?: string;
   externalReference: string;
   taker: {
     documentType: 'cpf' | 'cnpj';
