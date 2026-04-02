@@ -23,4 +23,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
 
 EXPOSE 3000
 
-CMD ["node", "dist/main"]
+COPY start.sh ./
+RUN chmod +x start.sh
+
+CMD ["sh", "start.sh"]
