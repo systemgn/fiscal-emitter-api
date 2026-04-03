@@ -101,7 +101,7 @@ fiscal-emitter-api/
 │   │   ├── admin-auth/
 │   │   │   ├── admin-auth.controller.ts      ← POST /v1/admin/auth/login
 │   │   │   ├── admin-auth.service.ts         ← valida ADMIN_USERNAME + ADMIN_PASSWORD_HASH (bcrypt)
-│   │   │   ├── admin-auth.module.ts          ← JwtModule.registerAsync com JWT_SECRET
+│   │   │   ├── admin-auth.module.ts          ← JwtModule.registerAsync com JWT_SECRET; exporta JwtModule + JwtAdminGuard
 │   │   │   └── jwt-admin.guard.ts            ← valida Bearer token com role=admin
 │   │   ├── auth/
 │   │   │   ├── auth.service.ts               ← validateApiCredentials(); bcrypt.compare do secret
@@ -109,8 +109,8 @@ fiscal-emitter-api/
 │   │   │   └── guards/
 │   │   │       └── api-key.guard.ts          ← lê x-api-key + x-api-secret, popula req.tenant
 │   │   ├── exports/
-│   │   │   ├── exports.controller.ts         ← GET /v1/exports/:id
-│   │   │   └── exports.module.ts
+│   │   │   ├── exports.controller.ts         ← GET /v1/exports/:id; importa FiscalExportLog do service
+│   │   │   └── exports.module.ts             ← registra FiscalExportLog no forFeature
 │   │   ├── fiscal-documents/
 │   │   │   ├── entities/
 │   │   │   │   ├── fiscal-document.entity.ts
@@ -730,6 +730,7 @@ SWAGGER_ENABLED=true
 | Webhook com HMAC-SHA256 | Padrão de mercado (Stripe, GitHub); simples de validar; secret assimétrico ao payload |
 | Prometheus em `/metrics` (não `/v1/metrics`) | Padrão de facto; fora do prefix da API para não confundir com endpoints de negócio |
 | `TenantThrottleGuard` (não global) | Rate limit por tenant isola abusos; clientes pagantes não são afetados por mal uso de outros |
+| `AdminAuthModule` exporta `JwtModule` | Guards que dependem de `JwtService` precisam que o módulo importador tenha acesso ao `JwtModule` — sem exportar, módulos como `TenantsModule` falham em DI |
 
 ---
 
