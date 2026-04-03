@@ -5,12 +5,12 @@
 echo "Starting Fiscal Emitter API + Worker..."
 
 # Inicia Worker em background
-node dist/worker/worker-entry &
+node dist/src/worker/worker-entry &
 WORKER_PID=$!
 echo "Worker started (PID $WORKER_PID)"
 
 # Inicia API em foreground (mantém o container vivo)
-node dist/main
+node dist/src/main
 API_EXIT=$?
 
 # Se a API morrer, mata o worker também

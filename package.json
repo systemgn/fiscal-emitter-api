@@ -8,10 +8,10 @@
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\"",
-    "start": "node dist/main",
+    "start": "node dist/src/main",
     "start:dev": "nest start --watch",
     "start:worker": "nest start --watch --entryFile worker/worker-entry",
-    "start:worker:prod": "node dist/worker/worker-entry",
+    "start:worker:prod": "node dist/src/worker/worker-entry",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest --runInBand",
     "test:watch": "jest --watch",
