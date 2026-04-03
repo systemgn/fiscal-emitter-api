@@ -33,7 +33,9 @@ export function setupBullBoard(app: INestApplication): void {
   serverAdapter.setBasePath('/admin/queues');
 
   // Obtém instâncias de fila registradas no BullMQ
-  const queues = [QUEUE_EMIT, QUEUE_CANCEL, QUEUE_EXPORT, QUEUE_WEBHOOK].map(
+  // Tipo explícito any[] evita incompatibilidade entre versões do @bull-board
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const queues: any[] = [QUEUE_EMIT, QUEUE_CANCEL, QUEUE_EXPORT, QUEUE_WEBHOOK].map(
     (name) =>
       new BullMQAdapter(
         new Queue(name, {
@@ -43,10 +45,11 @@ export function setupBullBoard(app: INestApplication): void {
             password: process.env.REDIS_PASSWORD  || undefined,
           },
         }),
-      ) as any,
+      ),
   );
 
-  createBullBoard({ queues, serverAdapter });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  createBullBoard({ queues: queues as any, serverAdapter });
 
   // Middleware de Basic Auth
   const basicAuth = (req: Request, res: Response, next: NextFunction) => {
