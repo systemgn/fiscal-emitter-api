@@ -30,6 +30,7 @@ export class FiscalExportLog {
   @Column({ type: 'enum', enum: ['pending', 'processing', 'ready', 'expired', 'error'], default: 'pending' }) status: string;
   @Column({ name: 'download_url', type: 'text', nullable: true }) downloadUrl: string | null;
   @Column({ name: 'url_expires_at', type: 'timestamp', nullable: true }) urlExpiresAt: Date | null;
+  @Column({ name: 'error_message', type: 'text', nullable: true }) errorMessage: string | null;
   @CreateDateColumn({ name: 'created_at' }) createdAt: Date;
   @UpdateDateColumn({ name: 'updated_at' }) updatedAt: Date;
 }

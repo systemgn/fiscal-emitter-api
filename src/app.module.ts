@@ -13,6 +13,7 @@ import { ApiClient } from './modules/tenants/entities/api-client.entity';
 import { TenantCredential } from './modules/tenants/entities/tenant-credential.entity';
 import { WebhookSubscription } from './modules/webhooks/entities/webhook-subscription.entity';
 import { WebhookDelivery } from './modules/webhooks/entities/webhook-delivery.entity';
+import { FiscalExportLog } from './modules/fiscal-documents/fiscal-documents.service';
 import { AuthModule } from './modules/auth/auth.module';
 import { FiscalDocumentsModule } from './modules/fiscal-documents/fiscal-documents.module';
 import { ProvidersModule } from './modules/providers/providers.module';
@@ -51,7 +52,7 @@ import { pinoConfig } from './infrastructure/logger/pino.config';
         password: cfg.get('db.password'),
         database: cfg.get('db.name'),
         entities: [
-          FiscalDocument, FiscalDocumentEvent,
+          FiscalDocument, FiscalDocumentEvent, FiscalExportLog,
           Tenant, ApiClient, TenantCredential,
           WebhookSubscription, WebhookDelivery,
         ],

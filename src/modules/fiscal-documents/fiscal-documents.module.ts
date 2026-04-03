@@ -4,7 +4,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { FiscalDocument } from './entities/fiscal-document.entity';
 import { FiscalDocumentEvent } from './entities/fiscal-document-event.entity';
 import { FiscalDocumentsController } from './fiscal-documents.controller';
-import { FiscalDocumentsService } from './fiscal-documents.service';
+import { FiscalDocumentsService, FiscalExportLog } from './fiscal-documents.service';
 import { AuthModule } from '../auth/auth.module';
 import { EmissionProducer } from '../../infrastructure/queue/emission.producer';
 import {
@@ -13,13 +13,9 @@ import {
   QUEUE_EXPORT,
 } from '../../infrastructure/queue/queue.config';
 
-// FiscalExportLog entity — referência a tabela fiscal_exports_log
-// Importamos via forFeature com string para evitar dependência circular
-const FISCAL_EXPORTS_LOG_ENTITY = 'fiscal_exports_log';
-
 @Module({
   imports: [
-    TypeOrmModule.forFeature([FiscalDocument, FiscalDocumentEvent]),
+    TypeOrmModule.forFeature([FiscalDocument, FiscalDocumentEvent, FiscalExportLog]),
     BullModule.registerQueue(
       { name: QUEUE_EMIT },
       { name: QUEUE_CANCEL },

@@ -11,6 +11,7 @@ import { ApiClient } from '../modules/tenants/entities/api-client.entity';
 import { TenantCredential } from '../modules/tenants/entities/tenant-credential.entity';
 import { WebhookSubscription } from '../modules/webhooks/entities/webhook-subscription.entity';
 import { WebhookDelivery } from '../modules/webhooks/entities/webhook-delivery.entity';
+import { FiscalExportLog } from '../modules/fiscal-documents/fiscal-documents.service';
 import { EmissionProcessor } from './processors/emission.processor';
 import { CancellationProcessor } from './processors/cancellation.processor';
 import { ExportProcessor } from './processors/export.processor';
@@ -44,7 +45,7 @@ import {
         password: cfg.get('db.password'),
         database: cfg.get('db.name'),
         entities: [
-          FiscalDocument, FiscalDocumentEvent,
+          FiscalDocument, FiscalDocumentEvent, FiscalExportLog,
           Tenant, ApiClient, TenantCredential,
           WebhookSubscription, WebhookDelivery,
         ],
@@ -53,7 +54,7 @@ import {
       }),
     }),
     TypeOrmModule.forFeature([
-      FiscalDocument, FiscalDocumentEvent,
+      FiscalDocument, FiscalDocumentEvent, FiscalExportLog,
       WebhookSubscription, WebhookDelivery,
     ]),
     BullModule.forRootAsync({
