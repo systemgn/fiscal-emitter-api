@@ -1,6 +1,6 @@
 {
   "name": "fiscal-emitter-api",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "NFS-e Nacional Emitter API — Multi-tenant SaaS",
   "author": "Fiscal Emitter",
   "private": true,
