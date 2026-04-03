@@ -68,7 +68,7 @@ fiscal-emitter-api/
 ├── Dockerfile                        ← multi-stage: builder (npm build) + runtime (node:20-alpine)
 ├── docker-compose.yml                ← MySQL 8 + Redis 7 + API + Worker para desenvolvimento local
 ├── start.sh                          ← Railway: inicia Worker em background + API em foreground
-├── railway.toml                      ← builder=DOCKERFILE, healthcheckPath=/v1/health
+├── railway.toml                      ← builder=DOCKERFILE, healthcheckPath=/v1/health, timeout=120s
 ├── src/
 │   ├── main.ts                       ← entry point da API; global prefix v1; Swagger + Bull Board no startup
 │   ├── app.module.ts                 ← módulo raiz; registra todos os módulos, ThrottlerModule, LoggerModule
@@ -120,7 +120,7 @@ fiscal-emitter-api/
 │   │   │   │   ├── cancel-document.dto.ts
 │   │   │   │   └── export-document.dto.ts
 │   │   │   ├── fiscal-documents.controller.ts
-│   │   │   ├── fiscal-documents.service.ts   ← FiscalExportLog definido e exportado aqui (inline entity)
+│   │   │   ├── fiscal-documents.service.ts   ← FiscalExportLog definido e exportado aqui (inline entity); registrado no forFeature do módulo
 │   │   │   ├── fiscal-documents.module.ts
 │   │   │   ├── fiscal-documents.service.spec.ts
 │   │   │   └── fiscal-documents.service.spec.ts
@@ -162,7 +162,7 @@ fiscal-emitter-api/
 │       └── processors/
 │           ├── emission.processor.ts         ← @Processor(QUEUE_EMIT); chama provider.emit(); dispara webhook
 │           ├── cancellation.processor.ts     ← @Processor(QUEUE_CANCEL); chama provider.cancel(); dispara webhook
-│           ├── export.processor.ts           ← @Processor(QUEUE_EXPORT); chama provider.export()
+│           ├── export.processor.ts           ← @Processor(QUEUE_EXPORT); chama provider.export(); importa FiscalExportLog do service
 │           └── webhook.processor.ts          ← @Processor(QUEUE_WEBHOOK); entrega via webhooksService.deliver()
 ├── database/
 │   ├── schema.sql                            ← schema inicial (8 tabelas + seed)
@@ -356,7 +356,7 @@ LOG_LEVEL=debug              # info em produção
 | url_expires_at | TIMESTAMP NULL |                                                  |
 | error_message  | TEXT NULL    |                                                    |
 
-> **Nota:** `FiscalExportLog` está definido como classe **inline** em `fiscal-documents.service.ts` (não em `/entities/`) e precisa ser importado de lá nos testes via `import { FiscalExportLog } from './fiscal-documents.service'`.
+> **Nota:** `FiscalExportLog` está definido como classe **inline** em `fiscal-documents.service.ts` (não em `/entities/`) e precisa ser importado de lá via `import { FiscalExportLog } from './fiscal-documents.service'`. A entity é registrada no `TypeOrmModule.forFeature()` do `FiscalDocumentsModule` e do `WorkerModule`, e na lista de `entities` do `AppModule` e `WorkerModule`.
 
 ### `fiscal_requests` (log de chamadas SEFAZ)
 | Coluna           | Tipo         | Observações                                   |
@@ -675,29 +675,35 @@ curl -X POST http://localhost:3000/v1/documents/emit \
 
 **`start.sh` — comportamento:**
 ```sh
-node dist/worker/worker-entry &   # Worker em background
+node dist/src/worker/worker-entry &   # Worker em background
 WORKER_PID=$!
-node dist/main                    # API em foreground (mantém container vivo)
-kill $WORKER_PID 2>/dev/null      # Se API morrer, mata o worker também
+node dist/src/main                    # API em foreground (mantém container vivo)
+kill $WORKER_PID 2>/dev/null          # Se API morrer, mata o worker também
 ```
+
+> **Nota sobre o build:** O `nest build` com `baseUrl: "./"` no `tsconfig.json` gera os arquivos em `dist/src/` (não `dist/`). Todos os entry points (`start.sh`, `package.json`) usam o caminho `dist/src/`.
 
 > Deploy automático: qualquer `git push` na branch `master` aciona novo build no Railway.
 
 **Variáveis de ambiente obrigatórias no Railway:**
 ```
 NODE_ENV=production
-DB_HOST=<host interno mysql>
+DB_HOST=mysql.railway.internal        # DNS interno do serviço MySQL no Railway
 DB_PORT=3306
 DB_USER=root
-DB_PASSWORD=<senha>
+DB_PASSWORD=<senha do MySQL>
 DB_NAME=fiscal_emitter
-REDIS_HOST=<host interno redis>
+REDIS_HOST=redis.railway.internal     # DNS interno do serviço Redis no Railway
 REDIS_PORT=6379
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD_HASH=<bcrypt hash>
 JWT_SECRET=<string longa aleatória>
 BULL_BOARD_PASS=<senha segura>
+BULL_BOARD_ENABLED=true
+SWAGGER_ENABLED=true
 ```
+
+> **Importante:** As variáveis `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `REDIS_HOST` e `REDIS_PORT` devem ser configuradas manualmente no serviço da API apontando para os DNS internos dos serviços MySQL e Redis do Railway. Sem isso, a API não conecta aos bancos e o healthcheck falha.
 
 ---
 
@@ -715,7 +721,7 @@ BULL_BOARD_PASS=<senha segura>
 | node-forge para validação de PFX | Valida o certificado antes de salvar — evita erros silenciosos na emissão |
 | PFX como LONGBLOB (não arquivo) | Servidor Railway é efêmero (sem disco persistente); banco garante durabilidade |
 | Token OAuth cacheado em banco | Token A1 tem validade (~1h); reusar evita chamada extra de autenticação por emissão |
-| `FiscalExportLog` inline em service.ts | Simplifica — evita criação de arquivo de entidade separado para tabela auxiliar |
+| `FiscalExportLog` inline em service.ts | Simplifica — evita criação de arquivo de entidade separado para tabela auxiliar. Deve ser registrada no `forFeature` dos módulos que a utilizam |
 | API + Worker no mesmo container | Railway free plan limita a 3 serviços; `start.sh` contorna isso sem perda de funcionalidade |
 | `removeOnFail: false` em BullMQ | Jobs falhados ficam visíveis no Bull Board para diagnóstico; não desaparecem silenciosamente |
 | Classificação de erros SEFAZ | Erros de negócio (cliente errou) vs técnicos (SEFAZ instável) têm tratamento diferente — retry só faz sentido em técnicos |
