@@ -22,7 +22,7 @@ export class EmissionProducer {
 
   async enqueueEmission(data: EmitJobData): Promise<string> {
     const job = await this.emitQueue.add('emit', data, {
-      jobId: `emit:${data.documentId}`,
+      jobId: `emit_${data.documentId}`,
       attempts: 3,
       backoff: { type: 'exponential', delay: 5000 },
       removeOnComplete: { age: 3600 },
@@ -34,7 +34,7 @@ export class EmissionProducer {
 
   async enqueueCancellation(data: CancelJobData): Promise<string> {
     const job = await this.cancelQueue.add('cancel', data, {
-      jobId: `cancel:${data.documentId}`,
+      jobId: `cancel_${data.documentId}`,
       attempts: 3,
       backoff: { type: 'exponential', delay: 3000 },
       removeOnComplete: { age: 3600 },
@@ -46,7 +46,7 @@ export class EmissionProducer {
 
   async enqueueExport(data: ExportJobData): Promise<string> {
     const job = await this.exportQueue.add('export', data, {
-      jobId: `export:${data.exportLogId}`,
+      jobId: `export_${data.exportLogId}`,
       attempts: 2,
       backoff: { type: 'fixed', delay: 3000 },
       removeOnComplete: { age: 3600 },
