@@ -14,6 +14,8 @@
 **Produto:** API de emissão fiscal como serviço. Clientes são empresas (tenants) que integram via API Key + Secret.
 
 **Repositório GitHub:** `https://github.com/systemgn/fiscal-emitter-api`
+**URL Produção:** `https://fiscal-emitter-api-production.up.railway.app`
+**Status:** ✅ Online e testado — NFS-e sendo emitida via MockProvider em sandbox
 
 **Principais características:**
 - Multi-tenant com isolamento total de dados por `tenant_id`
@@ -47,7 +49,7 @@
 | Métricas         | prom-client             | ^15.1.2  | Prometheus, GET /metrics                                 |
 | Documentação     | @nestjs/swagger         | ^7.3.0   | Swagger UI em GET /v1/docs                               |
 | Rate limiting    | @nestjs/throttler       | ^5.1.2   | 120 req/min por tenant                                   |
-| Health check     | @nestjs/terminus        | ^10.2.3  | GET /v1/health                                           |
+| Health check     | —                       | —        | GET /v1/health — retorna 200 puro sem terminus (removido) |
 | Painel de filas  | @bull-board             | ^5.19.0  | GET /admin/queues (Basic Auth)                           |
 | Validação        | class-validator         | ^0.14.1  | Decorators em DTOs                                       |
 | Transformação    | class-transformer       | ^0.5.1   | Serialização/deserialização                              |
@@ -513,7 +515,7 @@ Transições válidas:
 
 | Método | Rota             | Auth         | Descrição                                    |
 |--------|------------------|--------------|----------------------------------------------|
-| GET    | `/v1/health`     | Não          | Health check (verifica conexão MySQL)        |
+| GET    | `/v1/health`     | Não          | Health check — retorna 200 puro (sem DB ping; terminus removido) |
 | GET    | `/metrics`       | Não          | Métricas Prometheus (fora do prefix `/v1`)   |
 | GET    | `/v1/docs`       | Não          | Swagger UI + JSON spec                       |
 | GET    | `/admin/queues`  | Basic Auth   | Bull Board — painel de filas BullMQ          |
@@ -660,13 +662,17 @@ curl -X POST http://localhost:3000/v1/documents/emit \
 
 | Item | Valor |
 |------|-------|
+| URL Produção | `https://fiscal-emitter-api-production.up.railway.app` |
+| Status | ✅ Online e testado — NFS-e emitida via MockProvider (sandbox) |
 | Repositório GitHub | `https://github.com/systemgn/fiscal-emitter-api` |
 | Branch de deploy | `master` |
 | Build | Docker (Dockerfile multi-stage) |
 | Start command | `sh start.sh` (API + Worker no mesmo container) |
-| Health check | `GET /v1/health` |
+| Health check | `GET /v1/health` — retorna 200 puro |
 | Banco de dados | MySQL 8 no Railway |
 | Cache/Fila | Redis no Railway |
+| TCP Proxy MySQL (acesso externo) | `junction.proxy.rlwy.net:52925` |
+| Versão atual | 3.0.1 (`package.json`) |
 
 **Estratégia de deploy no Railway (free plan — 3 serviços):**
 - 1 serviço: container único com API + Worker via `start.sh`
@@ -675,7 +681,7 @@ curl -X POST http://localhost:3000/v1/documents/emit \
 
 **`start.sh` — comportamento:**
 ```sh
-node dist/src/worker/worker-entry &   # Worker em background
+node dist/src/worker/worker-entry &   # Worker em background (caminho dist/src/)
 WORKER_PID=$!
 node dist/src/main                    # API em foreground (mantém container vivo)
 kill $WORKER_PID 2>/dev/null          # Se API morrer, mata o worker também
@@ -685,25 +691,43 @@ kill $WORKER_PID 2>/dev/null          # Se API morrer, mata o worker também
 
 > Deploy automático: qualquer `git push` na branch `master` aciona novo build no Railway.
 
-**Variáveis de ambiente obrigatórias no Railway:**
+> **Cache do Docker:** Se o Railway servir build stale (mesmos erros TS após fix), bumpar a versão no `package.json` invalida o cache da camada `COPY package*.json ./`.
+
+**Variáveis de ambiente no Railway (serviço da API):**
 ```
 NODE_ENV=production
-DB_HOST=mysql.railway.internal        # DNS interno do serviço MySQL no Railway
+DB_HOST=mysql.railway.internal
 DB_PORT=3306
 DB_USER=root
-DB_PASSWORD=<senha do MySQL>
+DB_PASSWORD=<senha do MySQL Railway>
 DB_NAME=fiscal_emitter
-REDIS_HOST=redis.railway.internal     # DNS interno do serviço Redis no Railway
+REDIS_HOST=redis.railway.internal
 REDIS_PORT=6379
 ADMIN_USERNAME=admin
-ADMIN_PASSWORD_HASH=<bcrypt hash>
-JWT_SECRET=<string longa aleatória>
+ADMIN_PASSWORD_HASH=<bcrypt hash da senha admin>
+JWT_SECRET=<string aleatória longa>
 BULL_BOARD_PASS=<senha segura>
 BULL_BOARD_ENABLED=true
 SWAGGER_ENABLED=true
 ```
 
-> **Importante:** As variáveis `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `REDIS_HOST` e `REDIS_PORT` devem ser configuradas manualmente no serviço da API apontando para os DNS internos dos serviços MySQL e Redis do Railway. Sem isso, a API não conecta aos bancos e o healthcheck falha.
+**Tenant de teste em produção (criado manualmente):**
+| Campo | Valor |
+|-------|-------|
+| Tenant ID | gerado no Railway (ver banco) |
+| API Key | `fea_40c0fd23403145af688c511ddc121ecc1b7d19f282ab2683` |
+| API Secret | `4772dcc542b322a8a94736fe4badb4f1c9151979a0cdc7567a137570fec4a058` (retornado na criação, não recuperável) |
+| Ambiente testado | `sandbox` — MockProvider |
+| Resultado do teste | NFS-e emitida com status `issued`, nfseNumber `2193234` |
+
+**Schema aplicado em produção via:**
+```js
+// Node.js + mysql2 (cliente local MySQL 5.5 não suporta caching_sha2_password do MySQL 8)
+// Conectado via TCP proxy: junction.proxy.rlwy.net:52925
+const connection = mysql2.createConnection({ host: 'junction.proxy.rlwy.net', port: 52925, ... });
+```
+
+> **Importante:** `mysql.railway.internal` não é acessível externamente. Para operações de manutenção no banco (aplicar migrations, consultar dados), usar o TCP proxy `junction.proxy.rlwy.net:52925` com cliente Node.js mysql2 (não MySQL CLI local — incompatível com caching_sha2_password).
 
 ---
 
@@ -731,6 +755,10 @@ SWAGGER_ENABLED=true
 | Prometheus em `/metrics` (não `/v1/metrics`) | Padrão de facto; fora do prefix da API para não confundir com endpoints de negócio |
 | `TenantThrottleGuard` (não global) | Rate limit por tenant isola abusos; clientes pagantes não são afetados por mal uso de outros |
 | `AdminAuthModule` exporta `JwtModule` | Guards que dependem de `JwtService` precisam que o módulo importador tenha acesso ao `JwtModule` — sem exportar, módulos como `TenantsModule` falham em DI |
+| BullMQ v5 proíbe `:` em jobIds customizados | `emit:uuid` causa `Error: Custom Id cannot contain :` em runtime; substituído por `_` → `emit_uuid`, `cancel_uuid`, `export_uuid` |
+| `@nestjs/terminus` removido do HealthModule | Terminus tentava conexão com MySQL no startup; se o banco ainda não estava pronto, o container caía antes do health check responder; agora retorna `{ status: "ok" }` sempre sem depender de infraestrutura |
+| `retryAttempts: 10` / `retryDelay: 3000` no TypeORM | MySQL Railway pode demorar para aceitar conexões na inicialização do container; sem retry a API crasha imediatamente |
+| `.dockerignore` adicionado | Exclui `node_modules`, `dist`, `.git`, `.env` do contexto Docker; reduz tamanho do build e evita vazar secrets |
 
 ---
 
