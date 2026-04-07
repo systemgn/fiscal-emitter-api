@@ -28,6 +28,7 @@ export interface EmitPayload {
     amount: number;
     taxes?: {
       issRate?: number;
+      issWithheld?: boolean;
       deductions?: number;
       pisAmount?: number;
       cofinsAmount?: number;

@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsEmail,
   IsEnum,
   IsNotEmpty,
@@ -61,6 +62,9 @@ export class TakerDto {
 export class TaxesDto {
   @ApiPropertyOptional({ example: 0.05, description: 'Alíquota ISS (0.05 = 5%)' })
   @IsOptional() @IsNumber() @Min(0) issRate?: number;
+
+  @ApiPropertyOptional({ example: false, description: 'ISS retido na fonte pelo tomador (IssRetido na NFS-e Nacional)' })
+  @IsOptional() @IsBoolean() issWithheld?: boolean;
 
   @ApiPropertyOptional({ example: 0 })
   @IsOptional() @IsNumber() @Min(0) deductions?: number;

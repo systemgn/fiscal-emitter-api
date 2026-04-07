@@ -297,6 +297,8 @@ export class NfseNacionalProvider implements FiscalProvider {
         valor:       p.service.amount,
         deducoes:    p.service.taxes?.deductions ?? 0,
         aliquotaIss: p.service.taxes?.issRate    ?? 0,
+        // IssRetido: 1=Sim (tomador retém), 2=Não — padrão NFS-e Nacional
+        issRetido:   p.service.taxes?.issWithheld ? 1 : 2,
         valorPis:    p.service.taxes?.pisAmount   ?? 0,
         valorCofins: p.service.taxes?.cofinsAmount ?? 0,
         valorIr:     p.service.taxes?.irAmount    ?? 0,
