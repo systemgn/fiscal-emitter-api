@@ -72,6 +72,7 @@ export class EmissionProcessor extends WorkerHost {
           amount:      Number(doc.serviceAmount),
           taxes: {
             issRate:      Number(doc.issRate),
+            issWithheld:  Boolean(doc.issWithheld),
             deductions:   Number(doc.deductions),
             pisAmount:    Number(doc.pisAmount),
             cofinsAmount: Number(doc.cofinsAmount),

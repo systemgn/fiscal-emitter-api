@@ -104,6 +104,9 @@ export class FiscalDocument {
   @Column({ name: 'iss_rate', type: 'decimal', precision: 7, scale: 4, default: 0 })
   issRate: number;
 
+  @Column({ name: 'iss_withheld', type: 'tinyint', width: 1, default: 0 })
+  issWithheld: boolean;
+
   @Column({ name: 'iss_amount', type: 'decimal', precision: 15, scale: 2, default: 0 })
   issAmount: number;
 

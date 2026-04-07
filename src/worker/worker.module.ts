@@ -19,6 +19,7 @@ import { WebhookProcessor } from './processors/webhook.processor';
 import { ProvidersModule } from '../modules/providers/providers.module';
 import { WebhooksService, QUEUE_WEBHOOK } from '../modules/webhooks/webhooks.service';
 import { MetricsModule } from '../infrastructure/metrics/metrics.module';
+import { MigrationsService } from '../infrastructure/database/migrations.service';
 import { pinoConfig } from '../infrastructure/logger/pino.config';
 import {
   QUEUE_CANCEL,
@@ -82,6 +83,7 @@ import {
     ExportProcessor,
     WebhookProcessor,
     WebhooksService,
+    MigrationsService,
   ],
 })
 export class WorkerModule {}

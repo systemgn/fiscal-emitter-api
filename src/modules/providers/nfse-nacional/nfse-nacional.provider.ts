@@ -17,21 +17,7 @@ import {
   StatusResult,
 } from '../fiscal-provider.interface';
 import { classifyNfseError, shouldRetry } from './nfse-error-codes';
-
-// Entidade inline de credenciais por tenant
-import { Column, Entity, PrimaryColumn } from 'typeorm';
-
-@Entity('tenant_credentials')
-class TenantCredential {
-  @PrimaryColumn({ type: 'char', length: 36 }) id: string;
-  @Column({ name: 'tenant_id', type: 'char', length: 36 }) tenantId: string;
-  @Column() environment: string;
-  @Column({ name: 'certificate_pfx', type: 'blob', nullable: true }) certificatePfx: Buffer | null;
-  @Column({ name: 'certificate_password', nullable: true }) certificatePassword: string | null;
-  @Column({ name: 'access_token', type: 'text', nullable: true }) accessToken: string | null;
-  @Column({ name: 'token_expires_at', type: 'timestamp', nullable: true }) tokenExpiresAt: Date | null;
-  @Column({ name: 'extra_config', type: 'json', nullable: true }) extraConfig: Record<string, any> | null;
-}
+import { TenantCredential } from '../../tenants/entities/tenant-credential.entity';
 
 /**
  * NfseNacionalProvider — integração real com a NFS-e Nacional (SEFAZ).
@@ -166,7 +152,7 @@ export class NfseNacionalProvider implements FiscalProvider {
         : this.config.get<string>('nfse.sandboxUrl');
 
     const cred = await this.credRepo.findOne({
-      where: { tenantId, environment },
+      where: { tenantId, environment: environment as 'sandbox' | 'production' },
     });
 
     let httpsAgent: https.Agent | undefined;

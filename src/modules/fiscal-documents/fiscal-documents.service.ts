@@ -77,6 +77,7 @@ export class FiscalDocumentsService {
     const serviceAmount = dto.service.amount;
     const deductions    = dto.service.taxes?.deductions ?? 0;
     const issRate       = dto.service.taxes?.issRate     ?? 0;
+    const issWithheld   = dto.service.taxes?.issWithheld ?? false;
     const issBase       = serviceAmount - deductions;
     const issAmount     = parseFloat((issBase * issRate).toFixed(2));
     const pisAmount     = dto.service.taxes?.pisAmount    ?? 0;
@@ -114,6 +115,7 @@ export class FiscalDocumentsService {
       serviceAmount,
       deductions,
       issRate,
+      issWithheld,
       issAmount,
       pisAmount,
       cofinsAmount,

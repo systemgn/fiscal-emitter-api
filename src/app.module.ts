@@ -23,6 +23,7 @@ import { TenantsModule } from './modules/tenants/tenants.module';
 import { ExportsModule } from './modules/exports/exports.module';
 import { AdminAuthModule } from './modules/admin-auth/admin-auth.module';
 import { MetricsModule } from './infrastructure/metrics/metrics.module';
+import { MigrationsService } from './infrastructure/database/migrations.service';
 import { TenantThrottleGuard } from './common/guards/tenant-throttle.guard';
 import { pinoConfig } from './infrastructure/logger/pino.config';
 
@@ -95,6 +96,7 @@ import { pinoConfig } from './infrastructure/logger/pino.config';
   ],
   providers: [
     { provide: APP_GUARD, useClass: TenantThrottleGuard },
+    MigrationsService,
   ],
 })
 export class AppModule {}
