@@ -662,17 +662,19 @@ curl -X POST http://localhost:3000/v1/documents/emit \
 
 | Item | Valor |
 |------|-------|
-| URL Produção | `https://fiscal-emitter-api-production.up.railway.app` |
+| URL pública | `https://fiscal-emitter-api-production.up.railway.app` |
+| Domínio interno | `fiscal-emitter-api.railway.internal` |
 | Status | ✅ Online e testado — NFS-e emitida via MockProvider (sandbox) |
 | Repositório GitHub | `https://github.com/systemgn/fiscal-emitter-api` |
 | Branch de deploy | `master` |
 | Build | Docker (Dockerfile multi-stage) |
 | Start command | `sh start.sh` (API + Worker no mesmo container) |
-| Health check | `GET /v1/health` — retorna 200 puro |
-| Banco de dados | MySQL 8 no Railway |
+| Health check | `GET /v1/health` — retorna 200 puro (terminus removido) |
+| Swagger | `GET /v1/docs` |
+| Banco de dados | MySQL 8 no Railway (banco `fiscal_emitter`) |
 | Cache/Fila | Redis no Railway |
 | TCP Proxy MySQL (acesso externo) | `junction.proxy.rlwy.net:52925` |
-| Versão atual | 3.0.1 (`package.json`) |
+| Admin login | `POST /v1/admin/auth/login` — user: `admin` / senha: `FiscalAdmin2024!` |
 
 **Estratégia de deploy no Railway (free plan — 3 serviços):**
 - 1 serviço: container único com API + Worker via `start.sh`
@@ -728,6 +730,28 @@ const connection = mysql2.createConnection({ host: 'junction.proxy.rlwy.net', po
 ```
 
 > **Importante:** `mysql.railway.internal` não é acessível externamente. Para operações de manutenção no banco (aplicar migrations, consultar dados), usar o TCP proxy `junction.proxy.rlwy.net:52925` com cliente Node.js mysql2 (não MySQL CLI local — incompatível com caching_sha2_password).
+
+### Integração com TheraHub (clinica-web)
+
+O TheraHub (sistema principal) consome esta API para emissão de NFS-e.
+
+| Item | Valor |
+|------|-------|
+| TheraHub URL | `https://clinica-web-production-a139.up.railway.app` |
+| Webhook URL | `https://clinica-web-production-a139.up.railway.app/api/fiscal/webhook` |
+| Variável no TheraHub | `FISCAL_EMITTER_URL=https://fiscal-emitter-api-production.up.railway.app` |
+
+**Tenant configurado — Clinica VIDA:**
+
+| Item | Valor |
+|------|-------|
+| Tenant ID | `a7bd213d-9988-4e20-a898-502c72ca33dd` |
+| API Key | `fea_3e3b7f9cbea9926b064cf1cf8cba429e819e5dfd487dcae3` |
+| Webhook Secret | `870764c6df20bd28f132732e912e45830b9fce36146492d0106f0d1138b60ffd` |
+| Environment | `production` |
+
+> **API Secret** armazenado no banco do TheraHub (`clinica_fiscal_config`). Não expor.
+> Para criar novos tenants: `POST /v1/admin/tenants` com JWT admin.
 
 ---
 
