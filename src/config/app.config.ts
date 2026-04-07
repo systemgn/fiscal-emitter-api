@@ -29,6 +29,6 @@ export const queueConfig = registerAs('queue', () => ({
 }));
 
 export const nfseConfig = registerAs('nfse', () => ({
-  sandboxUrl:    process.env.NFSE_NACIONAL_SANDBOX_URL    ?? 'https://sandbox.nfse.gov.br',
-  productionUrl: process.env.NFSE_NACIONAL_PRODUCTION_URL ?? 'https://nfse.gov.br',
+  sandboxUrl:    process.env.NFSE_NACIONAL_SANDBOX_URL    ?? 'https://hom.nfse.fazenda.gov.br',
+  productionUrl: process.env.NFSE_NACIONAL_PRODUCTION_URL ?? 'https://nfse.fazenda.gov.br',
 }));
