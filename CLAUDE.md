@@ -652,7 +652,12 @@ curl -X POST http://localhost:3000/v1/documents/emit \
     "externalReference": "pedido-001",
     "providerCnpj": "12345678000195",
     "taker": {"documentType":"cpf","document":"12345678901","name":"João Silva"},
-    "service": {"code":"1.05","description":"Consultoria","amount":1000.00}
+    "service": {
+      "code":"1.05",
+      "description":"Consultoria",
+      "amount":1000.00,
+      "taxes": {"issRate":0.05,"issWithheld":false}
+    }
   }'
 ```
 
@@ -780,6 +785,8 @@ O TheraHub (sistema principal) consome esta API para emissão de NFS-e.
 | `TenantThrottleGuard` (não global) | Rate limit por tenant isola abusos; clientes pagantes não são afetados por mal uso de outros |
 | `AdminAuthModule` exporta `JwtModule` | Guards que dependem de `JwtService` precisam que o módulo importador tenha acesso ao `JwtModule` — sem exportar, módulos como `TenantsModule` falham em DI |
 | BullMQ v5 proíbe `:` em jobIds customizados | `emit:uuid` causa `Error: Custom Id cannot contain :` em runtime; substituído por `_` → `emit_uuid`, `cancel_uuid`, `export_uuid` |
+| `issWithheld` em `TaxesDto` | Campo booleano opcional adicionado ao DTO e à interface `EmitPayload`; mapeado para `issRetido: 1` (Sim) ou `2` (Não) no body enviado à SEFAZ — padrão do schema NFS-e Nacional |
+| `issRate` enviado pelo TheraHub | Alíquota ISS configurada por clínica no painel admin; TheraHub envia como `service.taxes.issRate` (decimal 0.05 = 5%); antes era sempre 0 |
 | `@nestjs/terminus` removido do HealthModule | Terminus tentava conexão com MySQL no startup; se o banco ainda não estava pronto, o container caía antes do health check responder; agora retorna `{ status: "ok" }` sempre sem depender de infraestrutura |
 | `retryAttempts: 10` / `retryDelay: 3000` no TypeORM | MySQL Railway pode demorar para aceitar conexões na inicialização do container; sem retry a API crasha imediatamente |
 | `.dockerignore` adicionado | Exclui `node_modules`, `dist`, `.git`, `.env` do contexto Docker; reduz tamanho do build e evita vazar secrets |
