@@ -268,9 +268,9 @@ export class FiscalDocumentsService {
   async retry(tenant: Tenant, documentId: string): Promise<FiscalDocument> {
     const doc = await this.findById(tenant.id, documentId);
 
-    if (!['error', 'rejected'].includes(doc.status)) {
+    if (!['error', 'rejected', 'processing', 'pending'].includes(doc.status)) {
       throw new BadRequestException(
-        `Cannot retry document with status '${doc.status}'. Only 'error' or 'rejected' documents can be retried.`,
+        `Cannot retry document with status '${doc.status}'. Only 'error', 'rejected', 'processing' or 'pending' documents can be retried.`,
       );
     }
 
