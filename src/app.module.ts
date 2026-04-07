@@ -5,7 +5,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 import { APP_GUARD } from '@nestjs/core';
-import { appConfig, dbConfig, queueConfig, redisConfig } from './config/app.config';
+import { appConfig, dbConfig, queueConfig, redisConfig, nfseConfig } from './config/app.config';
 import { FiscalDocument } from './modules/fiscal-documents/entities/fiscal-document.entity';
 import { FiscalDocumentEvent } from './modules/fiscal-documents/entities/fiscal-document-event.entity';
 import { Tenant } from './modules/tenants/entities/tenant.entity';
@@ -32,7 +32,7 @@ import { pinoConfig } from './infrastructure/logger/pino.config';
     // Config global
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, dbConfig, redisConfig, queueConfig],
+      load: [appConfig, dbConfig, redisConfig, queueConfig, nfseConfig],
       envFilePath: '.env',
     }),
 

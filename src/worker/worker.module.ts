@@ -3,7 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bullmq';
 import { LoggerModule } from 'nestjs-pino';
-import { appConfig, dbConfig, queueConfig, redisConfig } from '../config/app.config';
+import { appConfig, dbConfig, queueConfig, redisConfig, nfseConfig } from '../config/app.config';
 import { FiscalDocument } from '../modules/fiscal-documents/entities/fiscal-document.entity';
 import { FiscalDocumentEvent } from '../modules/fiscal-documents/entities/fiscal-document-event.entity';
 import { Tenant } from '../modules/tenants/entities/tenant.entity';
@@ -31,7 +31,7 @@ import {
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, dbConfig, redisConfig, queueConfig],
+      load: [appConfig, dbConfig, redisConfig, queueConfig, nfseConfig],
     }),
 
     LoggerModule.forRoot(pinoConfig()),
