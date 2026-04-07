@@ -21,8 +21,15 @@ export class EmissionProducer {
   ) {}
 
   async enqueueEmission(data: EmitJobData): Promise<string> {
+    // Remove job antigo com o mesmo ID (pode estar em 'failed') para garantir que o retry seja processado
+    const jobId = `emit_${data.documentId}`;
+    const existing = await this.emitQueue.getJob(jobId);
+    if (existing) {
+      await existing.remove().catch(() => {}); // ignora erro se já foi removido
+    }
+
     const job = await this.emitQueue.add('emit', data, {
-      jobId: `emit_${data.documentId}`,
+      jobId,
       attempts: 3,
       backoff: { type: 'exponential', delay: 5000 },
       removeOnComplete: { age: 3600 },
