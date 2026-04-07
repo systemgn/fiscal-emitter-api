@@ -120,7 +120,7 @@ export class WebhooksService {
           tenantId:       document.tenantId,
         },
         {
-          jobId:    `wh:${delivery.id}`,
+          jobId:    `wh_${delivery.id}`,
           attempts: 5,
           backoff:  { type: 'exponential', delay: 10_000 },
           removeOnComplete: { age: 86400 },
